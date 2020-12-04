@@ -9,21 +9,24 @@ describe 'rvm' do
   # rvm config
   let(:rvm_path) { '/usr/local/rvm/' }
 
-  # ruby 1.9.3 config
-  let(:ruby19_version) { 'ruby-1.9.3-p547' } # chosen for RVM binary support across nodesets
-  let(:ruby19_environment) { "#{rvm_path}environments/#{ruby19_version}" }
-  let(:ruby19_bin) { "#{rvm_path}rubies/#{ruby19_version}/bin/" }
-  let(:ruby19_gems) { "#{rvm_path}gems/#{ruby19_version}/gems/" }
-  let(:ruby19_gemset) { 'myproject' }
-  let(:ruby19_and_gemset) { "#{ruby19_version}@#{ruby19_gemset}" }
+  # list of currently supported interpreters
+  # https://github.com/rvm/rvm/blob/master/config/known
 
-  # ruby 2.0 config
-  let(:ruby20_version) { 'ruby-2.0.0-p481' } # chosen for RVM binary support across nodesets
-  let(:ruby20_environment) { "#{rvm_path}environments/#{ruby20_version}" }
-  let(:ruby20_bin) { "#{rvm_path}rubies/#{ruby20_version}/bin/" }
-  let(:ruby20_gems) { "#{rvm_path}gems/#{ruby20_version}/gems/" }
-  let(:ruby20_gemset) { 'myproject' }
-  let(:ruby20_and_gemset) { "#{ruby20_version}@#{ruby20_gemset}" }
+  # ruby 2.7 config
+  let(:ruby27_version) { 'ruby-2.7.0' } # chosen for RVM binary support across nodesets
+  let(:ruby27_environment) { "#{rvm_path}environments/#{ruby27_version}" }
+  let(:ruby27_bin) { "#{rvm_path}rubies/#{ruby27_version}/bin/" }
+  let(:ruby27_gems) { "#{rvm_path}gems/#{ruby27_version}/gems/" }
+  let(:ruby27_gemset) { 'myproject' }
+  let(:ruby27_and_gemset) { "#{ruby27_version}@#{ruby27_gemset}" }
+
+  # ruby 2.6 config
+  let(:ruby26_version) { 'ruby-2.6.5' } # chosen for RVM binary support across nodesets
+  let(:ruby26_environment) { "#{rvm_path}environments/#{ruby26_version}" }
+  let(:ruby26_bin) { "#{rvm_path}rubies/#{ruby26_version}/bin/" }
+  let(:ruby26_gems) { "#{rvm_path}gems/#{ruby26_version}/gems/" }
+  let(:ruby26_gemset) { 'myproject' }
+  let(:ruby26_and_gemset) { "#{ruby26_version}@#{ruby26_gemset}" }
 
   # passenger baseline configuration
   let(:service_name) do
@@ -71,9 +74,9 @@ describe 'rvm' do
       }
 
       # ensure rvm doesn't timeout finding binary rubies
-      class { 'rvm::rvmrc':
-        max_time_flag => '20',
-      } ->
+      #class { 'rvm::rvmrc':
+      #  max_time_flag => '20',
+      #} ->
 
       class { 'rvm': } ->
       rvm::system_user { 'vagrant': }
@@ -94,10 +97,10 @@ describe 'rvm' do
     let(:manifest) do
       super() + <<-EOS
         rvm_system_ruby {
-          '#{ruby19_version}':
+          '#{ruby27_version}':
             ensure      => 'present',
             default_use => false;
-          '#{ruby20_version}':
+          '#{ruby26_version}':
             ensure      => 'present',
             default_use => false;
         }
@@ -111,8 +114,8 @@ describe 'rvm' do
 
     it 'reflects installed rubies' do
       shell('/usr/local/rvm/bin/rvm list') do |r|
-        r.stdout.should =~ Regexp.new(Regexp.escape("\n   #{ruby19_version}"))
-        r.stdout.should =~ Regexp.new(Regexp.escape("\n   #{ruby20_version}"))
+        r.stdout.should =~ Regexp.new(Regexp.escape("#{ruby27_version}"))
+        r.stdout.should =~ Regexp.new(Regexp.escape("#{ruby26_version}"))
         r.exit_code.should be_zero
       end
     end
@@ -124,24 +127,24 @@ describe 'rvm' do
       let(:gemset_manifest) do
         manifest + <<-EOS
           rvm_gemset {
-            '#{ruby19_and_gemset}':
+            '#{ruby27_and_gemset}':
               ensure  => present,
-              require => Rvm_system_ruby['#{ruby19_version}'];
+              require => Rvm_system_ruby['#{ruby27_version}'];
           }
           rvm_gem {
-            '#{ruby19_and_gemset}/#{gem_name}':
+            '#{ruby27_and_gemset}/#{gem_name}':
               ensure  => '#{gem_version}',
-              require => Rvm_gemset['#{ruby19_and_gemset}'];
+              require => Rvm_gemset['#{ruby27_and_gemset}'];
           }
           rvm_gemset {
-            '#{ruby20_and_gemset}':
+            '#{ruby26_and_gemset}':
               ensure  => present,
-              require => Rvm_system_ruby['#{ruby20_version}'];
+              require => Rvm_system_ruby['#{ruby26_version}'];
           }
           rvm_gem {
-            '#{ruby20_and_gemset}/#{gem_name}':
+            '#{ruby26_and_gemset}/#{gem_name}':
               ensure  => '#{gem_version}',
-              require => Rvm_gemset['#{ruby20_and_gemset}'];
+              require => Rvm_gemset['#{ruby26_and_gemset}'];
           }
         EOS
       end
@@ -152,17 +155,17 @@ describe 'rvm' do
       end
 
       it 'reflects installed gems and gemsets' do
-        shell("/usr/local/rvm/bin/rvm #{ruby19_version} gemset list") do |r|
+        shell("/usr/local/rvm/bin/rvm #{ruby27_version} gemset list") do |r|
           r.stdout.should =~ Regexp.new(Regexp.escape("\n=> (default)"))
           r.stdout.should =~ Regexp.new(Regexp.escape("\n   global"))
-          r.stdout.should =~ Regexp.new(Regexp.escape("\n   #{ruby19_gemset}"))
+          r.stdout.should =~ Regexp.new(Regexp.escape("\n   #{ruby27_gemset}"))
           r.exit_code.should be_zero
         end
 
-        shell("/usr/local/rvm/bin/rvm #{ruby20_version} gemset list") do |r|
+        shell("/usr/local/rvm/bin/rvm #{ruby26_version} gemset list") do |r|
           r.stdout.should =~ Regexp.new(Regexp.escape("\n=> (default)"))
           r.stdout.should =~ Regexp.new(Regexp.escape("\n   global"))
-          r.stdout.should =~ Regexp.new(Regexp.escape("\n   #{ruby20_gemset}"))
+          r.stdout.should =~ Regexp.new(Regexp.escape("\n   #{ruby26_gemset}"))
           r.exit_code.should be_zero
         end
       end
@@ -188,25 +191,25 @@ describe 'rvm' do
 
     it 'reflects installed rubies' do
       shell('/usr/local/rvm/bin/rvm list') do |r|
-        r.stdout.should =~ Regexp.new(Regexp.escape("\n   #{jruby_version}"))
+        r.stdout.should =~ Regexp.new(Regexp.escape("#{jruby_version}"))
         r.exit_code.should be_zero
       end
     end
   end
 
-  context 'when installing passenger 3.0.x' do
-    let(:passenger_version) { '3.0.21' }
+  context 'when installing passenger 6.0.x' do
+    let(:passenger_version) { '6.0.7' }
     let(:passenger_domain) { 'passenger3.example.com' }
 
-    let(:passenger_ruby) { "#{rvm_path}wrappers/#{ruby19_version}/ruby" }
-    let(:passenger_root) { "#{ruby19_gems}passenger-#{passenger_version}" }
+    let(:passenger_ruby) { "#{rvm_path}wrappers/#{ruby27_version}/ruby" }
+    let(:passenger_root) { "#{ruby27_gems}passenger-#{passenger_version}" }
     # particular to 3.0.x (may or may not also work with 2.x?)
     let(:passenger_module_path) { "#{passenger_root}/ext/apache2/mod_passenger.so" }
 
     let(:manifest) do
       super() + <<-EOS
         rvm_system_ruby {
-          '#{ruby19_version}':
+          '#{ruby27_version}':
             ensure      => 'present',
             default_use => false,
         }
@@ -215,7 +218,7 @@ describe 'rvm' do
         }
         class { 'rvm::passenger::apache':
           version            => '#{passenger_version}',
-          ruby_version       => '#{ruby19_version}',
+          ruby_version       => '#{ruby27_version}',
           mininstances       => '3',
           maxinstancesperapp => '0',
           maxpoolsize        => '30',
@@ -257,7 +260,7 @@ describe 'rvm' do
         apply_manifest(manifest, catch_changes: true)
       end
 
-      shell("/usr/local/rvm/bin/rvm #{ruby19_version} do #{ruby19_bin}gem list passenger | grep \"passenger (#{passenger_version})\"").exit_code.should be_zero
+      shell("/usr/local/rvm/bin/rvm #{ruby27_version} do #{ruby27_bin}gem list passenger | grep \"passenger (#{passenger_version})\"").exit_code.should be_zero
     end
 
     it 'is running' do
@@ -275,7 +278,7 @@ describe 'rvm' do
     end
 
     it 'outputs status via passenger-status' do
-      shell("rvmsudo_secure_path=1 /usr/local/rvm/bin/rvm #{ruby19_version} do passenger-status") do |r|
+      shell("rvmsudo_secure_path=1 /usr/local/rvm/bin/rvm #{ruby27_version} do passenger-status") do |r|
         # spacing may vary
         r.stdout.should =~ %r{[\-]+ General information [\-]+}
         r.stdout.should =~ %r{max[ ]+= [0-9]+}
@@ -305,15 +308,15 @@ describe 'rvm' do
     let(:passenger_version) { '4.0.46' }
     let(:passenger_domain) { 'passenger4.example.com' }
 
-    let(:passenger_ruby) { "#{rvm_path}wrappers/#{ruby20_version}/ruby" }
-    let(:passenger_root) { "#{ruby20_gems}passenger-#{passenger_version}" }
+    let(:passenger_ruby) { "#{rvm_path}wrappers/#{ruby26_version}/ruby" }
+    let(:passenger_root) { "#{ruby26_gems}passenger-#{passenger_version}" }
     # particular to passenger 4.0.x
     let(:passenger_module_path) { "#{passenger_root}/buildout/apache2/mod_passenger.so" }
 
     let(:manifest) do
       super() + <<-EOS
         rvm_system_ruby {
-          '#{ruby20_version}':
+          '#{ruby26_version}':
             ensure      => 'present',
             default_use => false,
         }
@@ -322,7 +325,7 @@ describe 'rvm' do
         }
         class { 'rvm::passenger::apache':
           version            => '#{passenger_version}',
-          ruby_version       => '#{ruby20_version}',
+          ruby_version       => '#{ruby26_version}',
           mininstances       => '3',
           maxinstancesperapp => '0',
           maxpoolsize        => '30',
@@ -364,7 +367,7 @@ describe 'rvm' do
         apply_manifest(manifest, catch_changes: true)
       end
 
-      shell("/usr/local/rvm/bin/rvm #{ruby20_version} do #{ruby20_bin}gem list passenger | grep \"passenger (#{passenger_version})\"").exit_code.should be_zero
+      shell("/usr/local/rvm/bin/rvm #{ruby26_version} do #{ruby26_bin}gem list passenger | grep \"passenger (#{passenger_version})\"").exit_code.should be_zero
     end
 
     it 'is running' do
@@ -382,7 +385,7 @@ describe 'rvm' do
     end
 
     it 'outputs status via passenger-status' do
-      shell("rvmsudo_secure_path=1 /usr/local/rvm/bin/rvm #{ruby20_version} do passenger-status") do |r|
+      shell("rvmsudo_secure_path=1 /usr/local/rvm/bin/rvm #{ruby26_version} do passenger-status") do |r|
         # spacing may vary
         r.stdout.should =~ %r{[\-]+ General information [\-]+}
         r.stdout.should =~ %r{Max pool size \: [0-9]+}
