@@ -198,7 +198,7 @@ describe 'rvm' do
   end
 
   context 'when installing passenger 6.0.x' do
-    let(:passenger_version) { '6.0.7' }
+    let(:passenger_version) { '6.0.9' }
     let(:passenger_domain) { 'passenger3.example.com' }
 
     let(:passenger_ruby) { "#{rvm_path}wrappers/#{ruby27_version}/ruby" }
@@ -281,115 +281,6 @@ describe 'rvm' do
       shell("rvmsudo_secure_path=1 /usr/local/rvm/bin/rvm #{ruby27_version} do passenger-status") do |r|
         # spacing may vary
         r.stdout.should =~ %r{[\-]+ General information [\-]+}
-        r.exit_code.should == 0
-      end
-    end
-
-    it 'module loading should be configured as expected' do
-      file(load_file) do |f|
-        f.should contain "LoadModule passenger_module #{passenger_module_path}"
-      end
-    end
-
-    it 'module behavior should be configured as expected' do
-      file(conf_file) do |f|
-        f.should contain "PassengerRoot \"#{passenger_root}\""
-        f.should contain "PassengerRuby \"#{passenger_ruby}\""
-      end
-    end
-  end
-
-  context 'when installing passenger 4.0.x' do
-    let(:passenger_version) { '4.0.46' }
-    let(:passenger_domain) { 'passenger4.example.com' }
-
-    let(:passenger_ruby) { "#{rvm_path}wrappers/#{ruby26_version}/ruby" }
-    let(:passenger_root) { "#{ruby26_gems}passenger-#{passenger_version}" }
-    # particular to passenger 4.0.x
-    let(:passenger_module_path) { "#{passenger_root}/buildout/apache2/mod_passenger.so" }
-
-    let(:manifest) do
-      super() + <<-EOS
-        rvm_system_ruby {
-          '#{ruby26_version}':
-            ensure      => 'present',
-            default_use => false,
-        }
-        class { 'apache':
-          service_enable => false, # otherwise detects changes in 2nd run in ubuntu and docker
-        }
-        class { 'rvm::passenger::apache':
-          version            => '#{passenger_version}',
-          ruby_version       => '#{ruby26_version}',
-          mininstances       => '3',
-          maxinstancesperapp => '0',
-          maxpoolsize        => '30',
-          spawnmethod        => 'smart-lv2',
-        }
-        /* a simple ruby rack 'hello world' app */
-        file { '/var/www/passenger':
-          ensure  => directory,
-          owner   => '#{rackapp_user}',
-          group   => '#{rackapp_group}',
-          require => Class['rvm::passenger::apache'],
-        }
-        file { '/var/www/passenger/config.ru':
-          ensure  => file,
-          owner   => '#{rackapp_user}',
-          group   => '#{rackapp_group}',
-          content => "app = proc { |env| [200, { \\"Content-Type\\" => \\"text/html\\" }, [\\"hello <b>world</b>\\"]] }\\nrun app",
-          require => File['/var/www/passenger'] ,
-        }
-        apache::vhost { '#{passenger_domain}':
-          port    => '80',
-          docroot => '/var/www/passenger/public',
-          docroot_group => '#{rackapp_group}' ,
-          docroot_owner => '#{rackapp_user}' ,
-          custom_fragment => "PassengerRuby  #{passenger_ruby}\\nRailsEnv  development" ,
-          default_vhost => true ,
-          require => File['/var/www/passenger/config.ru'] ,
-        }
-      EOS
-    end
-
-    it 'installs with no errors' do
-      # Run it twice and test for idempotency
-      apply_manifest(manifest, catch_failures: true)
-      # swapping expectations under Ubuntu 14.04 - apache2-prefork-dev is being purged/restored by puppetlabs/apache, which is beyond the scope of this module
-      if osname == 'Ubuntu' && ['14.04'].include?(osversion)
-        apply_manifest(manifest, expect_changes: true)
-      else
-        apply_manifest(manifest, catch_changes: true)
-      end
-
-      shell("/usr/local/rvm/bin/rvm #{ruby26_version} do #{ruby26_bin}gem list passenger | grep \"passenger (#{passenger_version})\"").exit_code.should be_zero
-    end
-
-    it 'is running' do
-      service(service_name) do |s|
-        s.should_not be_enabled
-        s.should be_running
-      end
-    end
-
-    it 'answers' do
-      shell('/usr/bin/curl localhost:80') do |r|
-        r.stdout.should =~ %r{^hello <b>world</b>$}
-        r.exit_code.should == 0
-      end
-    end
-
-    it 'outputs status via passenger-status' do
-      shell("rvmsudo_secure_path=1 /usr/local/rvm/bin/rvm #{ruby26_version} do passenger-status") do |r|
-        # spacing may vary
-        r.stdout.should =~ %r{[\-]+ General information [\-]+}
-        r.stdout.should =~ %r{Max pool size \: [0-9]+}
-        r.stdout.should =~ %r{Processes     \: [0-9]+}
-        r.stdout.should =~ %r{Requests in top\-level queue \: [0-9]+}
-        r.stdout.should =~ %r{[\-]+ App.* groups [\-]+} # sometimes it's `App groups`, sometimes it's `Application groups`
-        # the following will only appear after a request has been made, as in "should answer to" above
-        r.stdout.should =~ %r{App root: /var/www/passenger}
-        r.stdout.should =~ %r{Requests in queue\: [0-9]+}
         r.exit_code.should == 0
       end
     end
