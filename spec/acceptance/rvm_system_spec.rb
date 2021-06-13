@@ -114,8 +114,8 @@ describe 'rvm' do
 
     it 'reflects installed rubies' do
       shell('/usr/local/rvm/bin/rvm list') do |r|
-        r.stdout.should =~ Regexp.new(Regexp.escape("#{ruby27_version}"))
-        r.stdout.should =~ Regexp.new(Regexp.escape("#{ruby26_version}"))
+        r.stdout.should =~ Regexp.new(Regexp.escape(ruby27_version.to_s))
+        r.stdout.should =~ Regexp.new(Regexp.escape(ruby26_version.to_s))
         r.exit_code.should be_zero
       end
     end
@@ -191,7 +191,7 @@ describe 'rvm' do
 
     it 'reflects installed rubies' do
       shell('/usr/local/rvm/bin/rvm list') do |r|
-        r.stdout.should =~ Regexp.new(Regexp.escape("#{jruby_version}"))
+        r.stdout.should =~ Regexp.new(Regexp.escape(jruby_version.to_s))
         r.exit_code.should be_zero
       end
     end
