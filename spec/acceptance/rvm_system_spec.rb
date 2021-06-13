@@ -281,11 +281,6 @@ describe 'rvm' do
       shell("rvmsudo_secure_path=1 /usr/local/rvm/bin/rvm #{ruby27_version} do passenger-status") do |r|
         # spacing may vary
         r.stdout.should =~ %r{[\-]+ General information [\-]+}
-        r.stdout.should =~ %r{max[ ]+= [0-9]+}
-        r.stdout.should =~ %r{count[ ]+= [0-9]+}
-        r.stdout.should =~ %r{active[ ]+= [0-9]+}
-        r.stdout.should =~ %r{inactive[ ]+= [0-9]+}
-        r.stdout.should =~ %r{Waiting on global queue: [0-9]+}
         r.exit_code.should == 0
       end
     end
@@ -391,7 +386,7 @@ describe 'rvm' do
         r.stdout.should =~ %r{Max pool size \: [0-9]+}
         r.stdout.should =~ %r{Processes     \: [0-9]+}
         r.stdout.should =~ %r{Requests in top\-level queue \: [0-9]+}
-        r.stdout.should =~ %r{[\-]+ Application groups [\-]+}
+        r.stdout.should =~ %r{[\-]+ App.* groups [\-]+} # sometimes it's `App groups`, sometimes it's `Application groups`
         # the following will only appear after a request has been made, as in "should answer to" above
         r.stdout.should =~ %r{App root: /var/www/passenger}
         r.stdout.should =~ %r{Requests in queue\: [0-9]+}
