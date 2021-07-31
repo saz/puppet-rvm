@@ -173,7 +173,7 @@ describe 'rvm' do
   end
 
   context 'when installing jruby' do
-    let(:jruby_version) { 'jruby-1.7.6' }
+    let(:jruby_version) { 'jruby' }
 
     let(:manifest) do
       super() + <<-EOS
