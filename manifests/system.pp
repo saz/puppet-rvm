@@ -45,7 +45,7 @@ class rvm::system (
       { 'id' => '39499BDB', 'source' => 'https://rvm.io/pkuczynski.asc' },
     ]
     # https keys are downloaded with wget
-    ensure_package(['wget'])
+    ensure_packages(['wget'])
     $gnupg_key_id.each |Hash[String[1], String[1]] $key| {
       gnupg_key { $key['id']:
         ensure     => 'present',
