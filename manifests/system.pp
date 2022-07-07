@@ -25,7 +25,8 @@ class rvm::system (
   $environment = concat($proxy_environment, ["HOME=${home}"])
 
   if $signing_keys {
-    include gnupg
+    # TODO: disabled for now, see https://github.com/voxpupuli/puppet-rvm/issues/186
+    # include gnupg
 
     # https keys are downloaded with wget
     ensure_packages(['wget'])
@@ -37,7 +38,6 @@ class rvm::system (
         key_source => $key['source'],
         key_type   => public,
         before     => Exec['system-rvm'],
-        require    => Class['gnupg'],
       }
     }
   }
